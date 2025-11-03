@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gift • Productivity Hub (with Pop-up Reminders)</title>
+<!-- Chart.js CDN (for weekly chart) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{--accent:#0066ff;--muted:#65748b;--bg:linear-gradient(180deg,#f1f5fb,#eef2fb)}
+  [data-theme="dark"]{--accent:#4ea8ff;--muted:#9aa6b2;--bg:linear-gradient(180deg,#071226,#0f1724)}
+  *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#07203a;padding:18px;display:flex;justify-content:center}
+  .wrap{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 360px;gap:14px}
+  header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#dfefff,#fff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#034}
+  h1{margin:0;font-size:18px}
+  .subtitle{font-size:13px;color:var(--muted)}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.7));padding:14px;border-radius:12px;box-shadow:0 10px 24px rgba(4,20,40,0.06)}
+  [data-theme="dark"] .card{background:linear-gradient(180deg,rgba(20,24,30,0.45),rgba(12,16,22,0.3));color:#dfe9ff;border:1px solid rgba(255,255,255,0.02)}
+  .left{display:flex;flex-direction:column;gap:12px}
+  .section h2{margin:0 0 8px 0;font-size:15px}
+  .controls-row{display:flex;gap:8px;align-items:center}
+  .time-display{font-weight:700;min-width:110px;font-size:18px}
+  input,select,button{font-family:inherit}
+  .btn{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;background:var(--accent);color:white;font-weight:600}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(0,102,255,0.12)}
+  .small{font-size:13px;color:var(--muted)}
+  .task-list label{display:flex;gap:10px;align-items:center;margin:8px 0}
+  input[type="checkbox"]{transform:scale(1.12);accent-color:var(--accent)}
+  canvas{width:100%;height:140px}
+  .right{display:flex;flex-direction:column;gap:12px}
+  .progress-bg{height:14px;background:#eef6ff;border-radius:999px;overflow:hidden;border:1px solid rgba(0,0,0,0.03)}
+  .progress-bar{height:100%;width:0%;background:var(--accent);transition:width 300ms}
+  .small-input{width:86px;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)}
+  .settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .pill{padding:6px 8px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);background:transparent;font-size:13px}
+  .dnd{background:#ffcccb;color:#6d0000}
+  .footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+  @media (max-width:980px){.wrap{grid-template-columns:1fr;padding-bottom:60px}}
+</style>
+</head>
+<body>
+  <div id="root" class="wrap" data-theme="">
+    <header>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="logo">G</div>
+        <div>
+          <h1>Gift • Productivity Hub</h1>
+          <div class="subtitle">University • Huawei Track • Kotlin — with pop-up reminders</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="datePicker" />
+        <button class="btn ghost" id="todayBtn">Today</button>
+        <button class="btn ghost" id="themeBtn">Theme</button>
+      </div>
+    </header>
+
+    <!-- LEFT -->
+    <div class="left">
+      <div class="card section">
+        <h2>🎓 University</h2>
+        <div class="controls-row">
+          <div class="time-display" id="uniTime">00:00:00</div>
+          <button class="btn" id="uniStart">Start</button>
+          <button class="btn ghost" id="uniStop" disabled>Stop</button>
+          <div style="margin-left:auto;text-align:right">
+            <div class="small">Today: <span id="uniTodayTotal">0h 0m</span></div>
+            <div class="small">Sessions: <span id="uniCount">0</span></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label><input type="checkbox" id="uni_notes"> Review lecture notes</label>
+          <label><input type="checkbox" id="uni_assign"> Complete assignments</label>
+          <label><input type="checkbox" id="uni_pomo"> Use Pomodoro (25/5)</label>
+          <label><input type="checkbox" id="uni_summary"> Write 3-line summary</label>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <input class="small-input" id="uniManual" placeholder="mm:ss" />
+          <button class="btn ghost" id="uniAdd">Add Time</button>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h2>☁️ Huawei Computing Track</h2>
+        <div class="controls-row">
+          <div class="time-display" id="huaweiTime">00:00:00</div>
+          <button class="btn" id="huaweiStart">Start</button>
+          <button class="btn ghost" id="huaweiStop" disabled>Stop</button>
+          <div style="margin-left:auto;text-align:right">
+            <div class="small">Today: <span id="huaweiTodayTotal">0h 0m</span></div>
+            <div class="small">Sessions: <span id="huaweiCount">0</span></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label><input type="checkbox" id="h_print"> Learn print/input</label>
+          <label><input type="checkbox" id="h_variables"> Variables & types</label>
+          <label><input type="checkbox" id="h_loops"> Loops (for/while)</label>
+          <label><input type="checkbox" id="h_calc"> Build calculator</label>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <input class="small-input" id="huaweiManual" placeholder="mm:ss" />
+          <button class="btn ghost" id="huaweiAdd">Add Time</button>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h2>💻 Kotlin</h2>
+        <div class="controls-row">
+          <div class="time-display" id="kTime">00:00:00</div>
+          <button class="btn" id="kStart">Start</button>
+          <button class="btn ghost" id="kStop" disabled>Stop</button>
+          <div style="margin-left:auto;text-align:right">
+            <div class="small">Today: <span id="kTodayTotal">0h 0m</span></div>
+            <div class="small">Sessions: <span id="kCount">0</span></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label><input type="checkbox" id="k_setup"> Install Android Studio</label>
+          <label><input type="checkbox" id="k_syntax"> Learn Kotlin syntax</label>
+          <label><input type="checkbox" id="k_ui"> Build layout (TextView, Button)</label>
+          <label><input type="checkbox" id="k_app"> Build Calculator App</label>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <input class="small-input" id="kManual" placeholder="mm:ss" />
+          <button class="btn ghost" id="kAdd">Add Time</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div class="card">
+        <h2>Progress & Reminders</h2>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="flex:1">
+            <div class="progress-bg" style="margin-bottom:8px"><div id="progressBar" class="progress-bar"></div></div>
+            <div style="display:flex;justify-content:space-between"><div class="small">Checked tasks</div><div class="small" id="checkedCount">0 / 12</div></div>
+          </div>
+          <div style="width:120px;text-align:right"><div id="totalToday" style="font-weight:700">0h 0m</div><div class="small">Total today</div></div>
+        </div>
+
+        <div class="settings-row">
+          <button class="btn ghost" id="enableReminders">Enable Reminders</button>
+          <button class="btn ghost" id="toggleDND">Do Not Disturb: Off</button>
+          <label class="pill">Morning <input type="time" id="morningTime" style="margin-left:8px" value="09:00"></label>
+          <label class="pill">Afternoon <input type="time" id="afternoonTime" style="margin-left:8px" value="14:00"></label>
+          <label class="pill">Evening <input type="time" id="eveningTime" style="margin-left:8px" value="20:00"></label>
+        </div>
+        <div style="margin-top:8px" class="small">Reminders are browser pop-ups. Allow notifications when prompted. Use Live Server in VS Code for best results.</div>
+      </div>
+
+      <div class="card">
+        <h2>Sessions (selected day)</h2>
+        <div id="sessionsList" style="max-height:220px;overflow:auto;padding-top:6px"></div>
+      </div>
+
+      <div class="card">
+        <h2>Weekly Summary</h2>
+        <canvas id="weekChart"></canvas>
+      </div>
+    </div>
+
+    <div class="footer">Run with VS Code Live Server (recommended) • Notifications are browser pop-ups — allow them when asked.</div>
+  </div>
+
+<script>
+/* ---------------------------
+ Utility helpers & storage
+----------------------------*/
+function isoDate(ts=new Date()){
+  const d = new Date(ts); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function formatHMS(sec){
+  sec = Math.round(sec);
+  const h = Math.floor(sec/3600); sec%=3600; const m = Math.floor(sec/60); const s = sec%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function formatHMLabel(sec){ const h=Math.floor(sec/3600); sec%=3600; const m=Math.floor(sec/60); return `${h}h ${m}m`; }
+function saveDay(date,obj){ localStorage.setItem('tracker_DATA_' + date, JSON.stringify(obj)); }
+function loadDay(date){ const raw = localStorage.getItem('tracker_DATA_' + date); if(!raw) return {checkboxes:{},sessions:[],manualAdds:{university:0,huawei:0,kotlin:0}}; return JSON.parse(raw); }
+function computeTotalsForDay(date){ const d=loadDay(date); let totals={university:0,huawei:0,kotlin:0}; (d.sessions||[]).forEach(s=>totals[s.section]+=s.duration||0); totals.university += d.manualAdds?.university||0; totals.huawei+=d.manualAdds?.huawei||0; totals.kotlin+=d.manualAdds?.kotlin||0; return totals; }
+
+/* ---------------------------
+ Basic app state & dom refs
+----------------------------*/
+let selectedDate = isoDate(); const datePicker = document.getElementById('datePicker'); datePicker.value = selectedDate;
+const uniTime = document.getElementById('uniTime'), huaweiTime = document.getElementById('huaweiTime'), kTime = document.getElementById('kTime');
+const uniStart = document.getElementById('uniStart'), uniStop = document.getElementById('uniStop'), huaweiStart = document.getElementById('huaweiStart'), huaweiStop = document.getElementById('huaweiStop');
+const kStart = document.getElementById('kStart'), kStop = document.getElementById('kStop');
+const uniManual = document.getElementById('uniManual'), huaweiManual = document.getElementById('huaweiManual'), kManual = document.getElementById('kManual');
+const sessionsList = document.getElementById('sessionsList'), progressBar = document.getElementById('progressBar'), checkedCount = document.getElementById('checkedCount'), totalToday = document.getElementById('totalToday');
+const enableRemindersBtn = document.getElementById('enableReminders'), toggleDndBtn = document.getElementById('toggleDND');
+const morningTimeInput = document.getElementById('morningTime'), afternoonTimeInput = document.getElementById('afternoonTime'), eveningTimeInput = document.getElementById('eveningTime');
+
+const checkboxIds = ['uni_notes','uni_assign','uni_pomo','uni_summary','h_print','h_variables','h_loops','h_calc','k_setup','k_syntax','k_ui','k_app'];
+
+let state = { running: null, remindersEnabled: false, dnd: false };
+
+/* ---------------------------
+ Theme quick toggle (auto allowed)
+----------------------------*/
+const root = document.getElementById('root'), themeBtn = document.getElementById('themeBtn');
+function applyTheme(t){ const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; if(t==='dark') root.setAttribute('data-theme','dark'); else if(t==='light') root.setAttribute('data-theme',''); else root.setAttribute('data-theme', sysDark ? 'dark' : ''); localStorage.setItem('tracker_theme', t); }
+let themeSaved = localStorage.getItem('tracker_theme') || 'auto'; applyTheme(themeSaved);
+themeBtn.addEventListener('click', ()=>{ themeSaved = (themeSaved==='auto') ? 'dark' : (themeSaved==='dark' ? 'light' : 'auto'); applyTheme(themeSaved); themeBtn.textContent = 'Theme: ' + themeSaved; });
+themeBtn.textContent = 'Theme: ' + themeSaved;
+
+/* ---------------------------
+ Render & UI
+----------------------------*/
+function renderAll(){
+  const day = loadDay(selectedDate);
+  // checkboxes
+  checkboxIds.forEach(id=>{ const el=document.getElementById(id); el.checked = !!day.checkboxes?.[id]; el.onchange = ()=>{ day.checkboxes = day.checkboxes||{}; day.checkboxes[id]=el.checked; saveDay(selectedDate,day); updateProgress(); }; });
+  // sessions & totals
+  renderSessionsAndTotals(day);
+  updateProgress();
+  drawWeekChart();
+}
+function renderSessionsAndTotals(day){
+  const totals = computeTotalsForDay(selectedDate);
+  document.getElementById('uniTodayTotal').textContent = formatHMLabel(totals.university);
+  document.getElementById('huaweiTodayTotal').textContent = formatHMLabel(totals.huawei);
+  document.getElementById('kTodayTotal').textContent = formatHMLabel(totals.kotlin);
+  document.getElementById('uniCount').textContent = (day.sessions || []).filter(s=>s.section==='university').length;
+  document.getElementById('huaweiCount').textContent = (day.sessions || []).filter(s=>s.section==='huawei').length;
+  document.getElementById('kCount').textContent = (day.sessions || []).filter(s=>s.section==='kotlin').length;
+  totalToday.textContent = formatHMLabel(totals.university + totals.huawei + totals.kotlin);
+
+  sessionsList.innerHTML = '';
+  if(!day.sessions || day.sessions.length===0) sessionsList.innerHTML = '<div class="small" style="color:var(--muted)">No sessions recorded for this day yet.</div>';
+  else day.sessions.slice().reverse().forEach(s=>{
+    const item = document.createElement('div'); item.className='session-item';
+    const start = new Date(s.start).toLocaleTimeString(), end = new Date(s.end).toLocaleTimeString();
+    item.innerHTML = `<div><div style="font-weight:700">${capitalize(s.section)}</div><div class="session-meta">${start} — ${end}</div></div><div style="text-align:right"><div style="font-weight:800">${formatHMLabel(s.duration)}</div><div class="session-meta">${formatHMS(s.duration)}</div></div>`;
+    sessionsList.appendChild(item);
+  });
+
+  uniTime.textContent='00:00:00'; huaweiTime.textContent='00:00:00'; kTime.textContent='00:00:00';
+}
+
+/* ---------------------------
+ Timer logic (start/stop + save)
+----------------------------*/
+function startTimer(section){
+  if(state.running && state.running.section !== section) stopTimer(state.running.section, true);
+  if(state.running && state.running.section === section) return;
+  state.running = {section, startTs: Date.now()};
+  toggleButtons(section, true);
+  state.running.timerInterval = setInterval(()=> {
+    const elapsed = Math.floor((Date.now() - state.running.startTs)/1000);
+    updateLiveDisplay(section, elapsed);
+  }, 300);
+}
+function stopTimer(section, finalize=true){
+  if(!state.running || state.running.section !== section) return;
+  const startTs = state.running.startTs, endTs = Date.now();
+  const duration = Math.round((endTs - startTs)/1000);
+  clearInterval(state.running.timerInterval);
+  state.running = null; toggleButtons(section,false); updateLiveDisplay(section,0);
+  if(finalize){
+    const startDay = isoDate(startTs);
+    const day = loadDay(startDay); day.sessions = day.sessions||[]; day.sessions.push({section, start:startTs, end:endTs, duration}); saveDay(startDay, day);
+    // Optionally fire a notification when a session is logged (if reminders enabled and not DND)
+    if(state.remindersEnabled && !state.dnd){
+      notify(`Session saved — ${capitalize(section)} ${formatHMLabel(duration)}`, `You logged ${formatHMLabel(duration)} for ${capitalize(section)}.`);
+    }
+  }
+  renderAll();
+}
+function updateLiveDisplay(section, elapsed){
+  const str = formatHMS(elapsed);
+  if(section==='university') uniTime.textContent = str;
+  if(section==='huawei') huaweiTime.textContent = str;
+  if(section==='kotlin') kTime.textContent = str;
+}
+function toggleButtons(section,isRunning){
+  const map = {university:[uniStart,uniStop], huawei:[huaweiStart,huaweiStop], kotlin:[kStart,kStop]};
+  Object.keys(map).forEach(sec=>{
+    const [sBtn, stopBtn] = map[sec];
+    if(sec===section){ sBtn.disabled = isRunning; stopBtn.disabled = !isRunning; } else { sBtn.disabled = isRunning ? true : false; }
+  });
+}
+uniStart.addEventListener('click', ()=> startTimer('university')); uniStop.addEventListener('click', ()=> stopTimer('university'));
+huaweiStart.addEventListener('click', ()=> startTimer('huawei')); huaweiStop.addEventListener('click', ()=> stopTimer('huawei'));
+kStart.addEventListener('click', ()=> startTimer('kotlin')); kStop.addEventListener('click', ()=> stopTimer('kotlin'));
+
+/* manual adds */
+function parseMmSs(text){ if(!text) return 0; const p=text.split(':').map(x=>x.trim()); if(p.length===1) return (parseInt(p[0])||0)*60; return (parseInt(p[0])||0)*60 + (parseInt(p[1])||0); }
+document.getElementById('uniAdd').addEventListener('click', ()=>{ const sec=parseMmSs(uniManual.value); if(sec<=0){ alert('Enter mm:ss or minutes'); return;} const d=loadDay(selectedDate); d.manualAdds=d.manualAdds||{university:0,huawei:0,kotlin:0}; d.manualAdds.university += sec; saveDay(selectedDate,d); uniManual.value=''; renderAll(); });
+document.getElementById('huaweiAdd').addEventListener('click', ()=>{ const sec=parseMmSs(huaweiManual.value); if(sec<=0){ alert('Enter mm:ss'); return;} const d=loadDay(selectedDate); d.manualAdds=d.manualAdds||{university:0,huawei:0,kotlin:0}; d.manualAdds.huawei += sec; saveDay(selectedDate,d); huaweiManual.value=''; renderAll(); });
+document.getElementById('kAdd').addEventListener('click', ()=>{ const sec=parseMmSs(kManual.value); if(sec<=0){ alert('Enter mm:ss'); return;} const d=loadDay(selectedDate); d.manualAdds=d.manualAdds||{university:0,huawei:0,kotlin:0}; d.manualAdds.kotlin += sec; saveDay(selectedDate,d); kManual.value=''; renderAll(); });
+
+/* ---------------------------
+ Progress bar & checkboxes
+----------------------------*/
+function updateProgress(){
+  const day = loadDay(selectedDate);
+  let checked = 0; checkboxIds.forEach(id=>{ if(day.checkboxes && day.checkboxes[id]) checked++; });
+  checkedCount.textContent = checked + ' / ' + checkboxIds.length;
+  const pct = Math.round((checked/checkboxIds.length)*100);
+  progressBar.style.width = pct + '%';
+  const totals = computeTotalsForDay(selectedDate);
+  totalToday.textContent = formatHMLabel(totals.university + totals.huawei + totals.kotlin);
+}
+const checkboxIdsList = checkboxIds; // alias for clarity
+
+/* ---------------------------
+ Date picker & initial render
+----------------------------*/
+datePicker.addEventListener('change', ()=>{ selectedDate = datePicker.value; if(state.running && selectedDate !== isoDate()) stopTimer(state.running.section, true); renderAll(); });
+document.getElementById('todayBtn').addEventListener('click', ()=>{ selectedDate = isoDate(); datePicker.value = selectedDate; renderAll(); });
+
+/* ---------------------------
+ Weekly chart (Chart.js)
+----------------------------*/
+let weekChart = null;
+function drawWeekChart(){
+  const labels = [], data = [];
+  for(let i=6;i>=0;i--){ const d = new Date(selectedDate); d.setDate(d.getDate()-i); const s = isoDate(d); labels.push(new Date(s).toLocaleDateString(undefined,{weekday:'short'})); const t = computeTotalsForDay(s); data.push(Math.round((t.university + t.huawei + t.kotlin)/3600*10)/10); }
+  const ctx = document.getElementById('weekChart').getContext('2d');
+  if(weekChart) weekChart.destroy();
+  weekChart = new Chart(ctx, {type:'bar', data:{labels, datasets:[{label:'Hours',data, backgroundColor:data.map((v,i)=> i===6 ? 'rgba(0,102,255,0.95)':'rgba(0,102,255,0.6)')}]}, options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+}
+
+/* ---------------------------
+ Notifications: pop-up scheduling + triggers
+----------------------------*/
+function supportsNotifications(){ return 'Notification' in window; }
+function requestNotificationPermission(){ return Notification.requestPermission(); }
+function notify(title, body){
+  if(!supportsNotifications()) return;
+  if(Notification.permission !== 'granted') return;
+  // don't show if DND on
+  if(state.dnd) return;
+  try {
+    new Notification(title, { body });
+  } catch(e){
+    console.warn('Notification failed', e);
+  }
+}
+
+/* Scheduled reminders logic:
+   - morningTimeInput, afternoonTimeInput, eveningTimeInput hold HH:MM
+   - A scheduler runs every minute and checks if current time matches any scheduled time
+   - We store lastShownTimes to avoid repeating within same minute
+*/
+let lastShownTimes = {}; // keys like 'morning_YYYY-MM-DD_HH:MM'
+function scheduleCheckerTick(){
+  if(!state.remindersEnabled) return;
+  if(state.dnd) return;
+  const now = new Date();
+  const hhmm = now.toTimeString().slice(0,5);
+  const todayKey = isoDate();
+  const entries = [
+    {id:'morning', el: morningTimeInput, msg: 'Good morning, Gift! A short study session now helps your day.'},
+    {id:'afternoon', el: afternoonTimeInput, msg: 'Afternoon nudge — 30 minutes on Huawei or Python?'},
+    {id:'evening', el: eveningTimeInput, msg: 'Evening check — log your time and wrap up your day.'}
+  ];
+  entries.forEach(e=>{
+    const scheduled = e.el.value || '';
+    if(!scheduled) return;
+    if(scheduled === hhmm){
+      const key = `${e.id}_${todayKey}_${hhmm}`;
+      if(lastShownTimes[key]) return; // already showed for this minute
+      lastShownTimes[key] = true;
+      // trigger a friendly notification with progress hint
+      const totals = computeTotalsForDay(todayKey); const minutesSoFar = Math.round((totals.university + totals.huawei + totals.kotlin)/60);
+      notify(e.msg, `So far: ${minutesSoFar} min today.`);
+    }
+  });
+}
+// run scheduler every 10 seconds (lightweight). It checks time equality with minute precision.
+setInterval(scheduleCheckerTick, 10 * 1000);
+
+/* enable reminders button behavior */
+enableRemindersBtn.addEventListener('click', async ()=> {
+  if(!supportsNotifications()){ alert('Your browser does not support notifications.'); return; }
+  const perm = await requestNotificationPermission();
+  if(perm !== 'granted'){ alert('Please allow notifications in your browser settings.'); return; }
+  state.remindersEnabled = true;
+  enableRemindersBtn.textContent = 'Reminders: Enabled';
+  enableRemindersBtn.classList.add('pill');
+  // show immediate confirmation
+  notify('Reminders enabled', 'You will receive pop-up reminders at the times you set.');
+});
+
+/* Do Not Disturb toggle */
+toggleDndBtn.addEventListener('click', ()=> {
+  state.dnd = !state.dnd;
+  toggleDndBtn.textContent = 'Do Not Disturb: ' + (state.dnd ? 'On' : 'Off');
+  toggleDndBtn.classList.toggle('dnd', state.dnd);
+});
+
+/* quick permission status show */
+if(supportsNotifications() && Notification.permission === 'granted'){ enableRemindersBtn.textContent = 'Reminders: Enabled'; state.remindersEnabled = true; }
+
+/* ---------------------------
+ Helpers & init
+----------------------------*/
+function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function init(){
+  datePicker.value = selectedDate;
+  // default times (can be changed by user)
+  if(!localStorage.getItem('tracker_morning')) morningTimeInput.value = '09:00';
+  if(!localStorage.getItem('tracker_afternoon')) afternoonTimeInput.value = '14:00';
+  if(!localStorage.getItem('tracker_evening')) eveningTimeInput.value = '20:00';
+  // wire saving of times to localStorage
+  [ ['tracker_morning', morningTimeInput], ['tracker_afternoon', afternoonTimeInput], ['tracker_evening', eveningTimeInput] ].forEach(([k,el])=>{
+    const saved = localStorage.getItem(k); if(saved) el.value = saved;
+    el.addEventListener('change', ()=> localStorage.setItem(k, el.value));
+  });
+
+  // wire simple UI controls, checkboxes wired in renderAll
+  document.getElementById('todayBtn').addEventListener('click', ()=>{ selectedDate = isoDate(); datePicker.value = selectedDate; renderAll(); });
+  // manual add buttons already wired above via element ids
+  // wire basic clear / reset and checkbox wiring from earlier app (minimal here)
+  // initial render
+  renderAll();
+  drawWeekChart();
+  // schedule: also clear old lastShownTimes each new day (every minute check)
+  setInterval(()=>{ const keys = Object.keys(lastShownTimes); if(keys.length && isoDate() !== Object.keys(lastShownTimes)[0]?.split('_')[1]) lastShownTimes={}; }, 60*1000);
+}
+init();
+
+/* redraw chart on renderAll */
+function drawWeekChart(){
+  const labels=[], data=[];
+  for(let i=6;i>=0;i--){ const d=new Date(selectedDate); d.setDate(d.getDate()-i); const s=isoDate(d); labels.push(new Date(s).toLocaleDateString(undefined,{weekday:'short'})); const t=computeTotalsForDay(s); data.push(Math.round((t.university+t.huawei+t.kotlin)/3600*10)/10); }
+  const ctx = document.getElementById('weekChart').getContext('2d');
+  if(window._weekChart) window._weekChart.destroy();
+  window._weekChart = new Chart(ctx, {type:'bar', data:{labels, datasets:[{label:'Hours', data, backgroundColor:data.map((v,i)=> i===6 ? 'rgba(0,102,255,0.95)' : 'rgba(0,102,255,0.6)')}]}, options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+}
+
+/* update UI periodically (in case of external edits) */
+setInterval(()=>{ renderAll(); }, 10*1000);
+
+/* ensure running timer finalises on page close */
+window.addEventListener('beforeunload', ()=>{ if(state.running) stopTimer(state.running.section, true); });
+
+</script>
+</body>
+</html>
